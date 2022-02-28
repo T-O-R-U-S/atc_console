@@ -1,36 +1,16 @@
+pub mod cpu;
+pub mod color;
+pub mod key;
+
+use color::Colour;
+use cpu::Cpu;
+
 use minifb::{Window, WindowOptions};
 
 use std::time::{ Instant };
 
-const WIDTH: usize = 320;
-const HEIGHT: usize = 320;
-
-#[allow(dead_code)]
-#[repr(u32)]
-enum Colour {
-    Black = 0x000000,
-    White = 0xfcfcfc,
-    Gray = 0x7c7c7c,
-    
-    Red = 0xC70039,
-    Green = 0x3CFF00,
-    Blue = 0x00BBFF,
-    
-    DarkGreen = 0x007800,
-    DarkBlue = 0x0058f8,
-    DarkRed = 0xa81000,
-
-    Cyan = 0x00fcfc,
-    
-    Orange = 0xFF5733,
-    Yellow = 0xf8b800,
-    Brown = 0x7E4100,
-    
-    Purple = 0xA600FF,
-    Pink = 0xFF0074,
-
-    LightGray = 0xbcbcbc,
-}
+pub const WIDTH: usize = 320;
+pub const HEIGHT: usize = 320;
 
 fn main() {
     let mut buffer: [u32; HEIGHT * WIDTH] = [0xffffff; HEIGHT * WIDTH];
