@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 pub mod cpu;
 pub mod color;
 pub mod key;
@@ -9,8 +11,8 @@ use minifb::{Window, WindowOptions};
 
 use std::time::{ Instant };
 
-pub const WIDTH: usize = 320;
-pub const HEIGHT: usize = 320;
+pub const WIDTH: usize = 255;
+pub const HEIGHT: usize = 255;
 
 fn main() {
     let mut buffer: [u32; HEIGHT * WIDTH] = [0xffffff; HEIGHT * WIDTH];
