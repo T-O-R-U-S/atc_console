@@ -1,4 +1,5 @@
 #![feature(box_syntax)]
+#![feature(let_else)]
 
 pub mod cpu;
 pub mod color;
@@ -11,33 +12,17 @@ use minifb::{Window, WindowOptions};
 
 use std::time::{ Instant };
 
+use std::fs::read;
+
 pub const WIDTH: usize = 255;
 pub const HEIGHT: usize = 255;
 
 fn main() {
     let mut buffer: [u32; HEIGHT * WIDTH] = [0xffffff; HEIGHT * WIDTH];
 
-    let mut window = Window::new(
-        "ATC Fantasy Console",
-        WIDTH,
-        HEIGHT,
-        WindowOptions::default(),
-    )
-    .unwrap();
+    let mut cpu = Cpu::new();
 
-    while window.is_open() {
-        let now = Instant::now();
+    let bytecode = read("./game.atc").unwrap();
 
-        if now.elapsed().as_millis() % 50 != 0 {
-            continue;
-        }
-
-        for i in 0..102400 {
-            buffer[i] = Colour::Purple as u32;
-            buffer[(i + WIDTH + 1) % buffer.len()] = Colour::Yellow as u32;
-        }
-
-        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
-        window.update();
-    }
+    cpu.run(bytecode);
 }

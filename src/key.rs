@@ -41,4 +41,35 @@ impl Key {
 			Esc => MKey::Escape,
 		}
 	}
+
+	pub fn from_hex(hex: u8) -> Key {
+		macro_rules! hexcode {
+			($($ident: ident = $expr: expr),+) => {
+				match hex {
+					$(
+						$expr => $ident
+					),*,
+					any => panic!("Cannot convert {any:x} to keycode")
+				}
+			}
+		}
+
+		hexcode! {
+			Q    = 0x00,
+			W    = 0x01,
+			E    = 0x02,
+			A    = 0x03,
+			S    = 0x04,
+			D    = 0x05,
+			Z    = 0x06,
+			X    = 0x07,
+			C    = 0x08,
+			Up   = 0xd1,
+			Dwn  = 0xd2,
+			Lft  = 0xd3,
+			Rght = 0xd4,
+			Spc  = 0xf0,
+			Esc  = 0xf1
+		}
+	}
 }
