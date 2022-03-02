@@ -43,5 +43,5 @@ The instructions are focused more on ergonomics over being easier to implement a
 | Create/replace variable | `0xa1` | [Type](type_code.md), **Eight** data bytes, Addr Num; If the type is a bool, it consumes only one byte instead; either `0x01` (true) or `0x00` (false) |
 | Create variable, avoid replacing pre-existing variable | `0xa2` | [Type](type_code.md), **Eight** data bytes, Addr Num; If the type is a bool, it consumes only one byte instead; either `0x01` (true) or `0x00` (false) |
 | Write array item | `0xa3` | Array Addr, Arr Idx (0-7), Byte to write |
-| If | `0xe1` | Addr Num (Var corresponding to `0x01` or `0x00`). Evaluates until next non-parameter `0xe1` byte if `0x01`. |
+| TJump | `0xe1` | Condition (Addr), Byte to jump to |
 | Check input | `0xd0` | [Keycode](key_code.md), Addr Num |
