@@ -1,12 +1,12 @@
 use minifb::{KeyRepeat, Window, WindowOptions};
 
-use crate::{color::Colour, key::Key, HEIGHT, WIDTH};
+use crate::{color::Colour, key::Key, render::RenderBackend, HEIGHT, WIDTH};
 
 #[derive(Debug)]
-pub struct Cpu {
+pub struct Cpu<T: RenderBackend> {
     pub memory: [Mem; 255],
     pub buf: [Colour; crate::WIDTH * crate::HEIGHT],
-    pub window: minifb::Window,
+    pub window: T,
     pub header: HeaderData,
 }
 
@@ -36,7 +36,7 @@ pub struct HeaderData {
     alt_colours: bool,
 }
 
-impl Cpu {
+impl<T: RenderBackend> Cpu<T> {
     pub fn new() -> Self {
         Cpu {
             memory: [Mem::Nil; 255],
@@ -46,13 +46,7 @@ impl Cpu {
                 repeat: false,
                 alt_colours: false,
             },
-            window: Window::new(
-                "ATC Fantasy Console",
-                crate::WIDTH,
-                crate::HEIGHT,
-                WindowOptions::default(),
-            )
-            .expect("EMULATOR ERR:: => Failed to initiate window."),
+            window: T::new(),
         }
     }
 
@@ -93,6 +87,7 @@ impl Cpu {
                             let x: usize = bytecode.next().unwrap().into();
                             let y: usize = bytecode.next().unwrap().into();
                             let clr = bytecode.next().unwrap();
+                            // This is the only way to invert the Y axis
                             self.buf[x + y * WIDTH] = Colour::from_hex(clr);
                         }
                         0x02 => {
@@ -101,7 +96,7 @@ impl Cpu {
                             let y: usize =
                                 self.memory[bytecode.next().unwrap() as usize].to_num() as usize;
                             let clr = bytecode.next().unwrap();
-                            self.buf[x + y * WIDTH] = Colour::from_hex(clr);
+                            self.buf[x + y.abs_diff(HEIGHT)] = Colour::from_hex(clr);
                         }
                         0xf0 => {
                             let lhs = bytecode.next().unwrap() as usize;
@@ -257,10 +252,7 @@ impl Cpu {
                             let keycode = Key::from_hex(bytecode.next().unwrap());
                             let addr = bytecode.next().unwrap() as usize;
 
-                            if self
-                                .window
-                                .is_key_pressed(keycode.to_fb_key(), KeyRepeat::No)
-                            {
+                            if self.window.key(keycode) {
                                 self.memory[addr] = Mem::Int(0x01)
                             } else {
                                 self.memory[addr] = Mem::Int(0x00)
@@ -269,13 +261,7 @@ impl Cpu {
                         inst => panic!("Unrecognized instruction: {inst:x}"),
                     }
 
-                    self.window
-                        .update_with_buffer(
-                            &self.buf.map(|e| e as u32),
-                            crate::WIDTH,
-                            crate::HEIGHT,
-                        )
-                        .unwrap();
+                    self.window.update(self.buf);
                 }
 
                 if !self.header.repeat {
