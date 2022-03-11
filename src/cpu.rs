@@ -32,6 +32,27 @@ pub struct HeaderData {
     alt_colours: bool,
 }
 
+pub struct ByteCode(Vec<u8>, usize);
+
+impl ByteCode {
+    pub fn next(&mut self) -> Option<u8> {
+        let Some(out) = self.0.get(self.1) else {
+            return None
+        };
+        self.1 += 1;
+
+        Some(*out)
+    }
+
+    pub fn jmp(&mut self, byte: usize) {
+        self.1 = byte
+    }
+
+    pub fn new(bytecode: Vec<u8>) -> Self {
+        Self(bytecode, 0)
+    }
+}
+
 impl<T: RenderBackend> Cpu<T> {
     pub fn new() -> Self {
         Cpu {
@@ -47,7 +68,7 @@ impl<T: RenderBackend> Cpu<T> {
     }
 
     pub fn run(&mut self, bytecode: Vec<u8>) {
-        let mut bytecode = bytecode.into_iter();
+        let mut bytecode = ByteCode::new(bytecode);
 
         while let Some(header @ 0x01..) = bytecode.next() {
             match header {
@@ -70,8 +91,6 @@ impl<T: RenderBackend> Cpu<T> {
                 any => panic!("Unexpected byte ({any:x}) in header info"),
             }
         }
-
-        let bytecode_clone = bytecode.clone();
 
         'a: loop {
             while let Some(code) = bytecode.next() {
@@ -243,7 +262,44 @@ impl<T: RenderBackend> Cpu<T> {
                         }
                     }
                     0xe1 => {
-                        todo!("FJMP/TJMP not implemented.")
+                        let var_addr = bytecode.next().unwrap() as usize;
+
+                        let jmp_byte = [
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                        ];
+
+                        if self.memory[var_addr] == Mem::Int(0x01) {
+                            bytecode.jmp(
+                                usize::from_le_bytes(jmp_byte)
+                            )
+                        }
+                    }
+                    0xe2 => {
+                        let var_addr = bytecode.next().unwrap() as usize;
+
+                        let jmp_byte = [
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                        ];
+
+                        if self.memory[var_addr] != Mem::Int(0x01) {
+                            bytecode.jmp(
+                                usize::from_le_bytes(jmp_byte)
+                            )
+                        }
                     }
                     0xd0 => {
                         let keycode = Key::from_hex(bytecode.next().unwrap());
@@ -265,13 +321,7 @@ impl<T: RenderBackend> Cpu<T> {
                 break;
             }
 
-            // I know that the Cycle type exists,
-            // however, whenever I attempt to use it
-            // it becomes impossible to compile because
-            // using trait types in the Cpu struct
-            // will mean that they cannot implement
-            // Clone because Clone requires Self: Sized.
-            bytecode = bytecode_clone.clone();
+            bytecode.jmp(0)
         }
     }
 }
