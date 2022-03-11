@@ -16,6 +16,8 @@ pub enum Key {
     Lft = 0xd3,
     Rght = 0xd4,
     Spc = 0xf0,
+    LCtrl = 0xc1,
+    RCtrl = 0xc2
 }
 
 use minifb::Key as MKey;
@@ -38,6 +40,8 @@ impl Key {
             Lft => MKey::Left,
             Rght => MKey::Right,
             Spc => MKey::Space,
+            LCtrl => MKey::LeftCtrl,
+            RCtrl => MKey::RightCtrl,
         }
     }
 
@@ -57,6 +61,8 @@ impl Key {
             "LFT" => Key::Lft,
             "RGHT" => Key::Rght,
             "SPC" | " " => Key::Spc,
+            "LCTRL" => Key::LCtrl,
+            "RCTRL" => Key::RCtrl,
             _ => return None,
         })
     }
@@ -87,7 +93,9 @@ impl Key {
             Dwn  = 0xd2,
             Lft  = 0xd3,
             Rght = 0xd4,
-            Spc  = 0xf0
+            Spc  = 0xf0,
+            LCtrl = 0xc1,
+            RCtrl = 0xc2
         }
     }
 }

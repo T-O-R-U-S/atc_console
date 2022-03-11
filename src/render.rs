@@ -101,6 +101,8 @@ impl RenderBackend for FltkPixels {
                 FKey::Down => Key::Dwn == key,
                 FKey::Left => Key::Lft == key,
                 FKey::Right => Key::Rght == key,
+                FKey::ControlL => Key::LCtrl == key,
+                FKey::ControlR => Key::RCtrl == key,
                 _ => false
             }
         }
