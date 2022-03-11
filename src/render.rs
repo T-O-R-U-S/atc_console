@@ -1,15 +1,13 @@
-use std::default;
-
 use crate::{color::Colour, key::Key, HEIGHT, RES, WIDTH};
 
 use fltk::{
+    enums::Key as FKey,
     app::{self, App},
-    enums::Event,
     prelude::*,
-    window::{DoubleWindow, Window as FWin},
+    window::{Window as FWin},
 };
 use minifb::{Window as MWin, WindowOptions};
-use pixels::{raw_window_handle::HasRawWindowHandle, Pixels, SurfaceTexture};
+use pixels::{Pixels, SurfaceTexture};
 
 pub trait RenderBackend {
     /// Updates the screen. Should panic on error, since
@@ -95,6 +93,22 @@ impl RenderBackend for FltkPixels {
     }
 
     fn key(&self, key: Key) -> bool {
-        todo!()
+        // Could defintely be handled better.
+
+        if app::event_text().is_empty() {
+            return match app::event_key() {
+                FKey::Up => Key::Up == key,
+                FKey::Down => Key::Dwn == key,
+                FKey::Left => Key::Lft == key,
+                FKey::Right => Key::Rght == key,
+                _ => false
+            }
+        }
+
+        if let Some(mat) = Key::from_str(&app::event_text()) && mat == key {
+            true
+        } else {
+            false
+        }
     }
 }

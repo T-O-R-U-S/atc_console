@@ -14,4 +14,3 @@
 | Lft |`0xd3`|
 | Rgt |`0xd4`|
 | SPC |`0xf0`|
-| ESC |`0xf1`|

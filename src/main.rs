@@ -2,7 +2,7 @@
 #![feature(let_else)]
 #![feature(int_abs_diff)]
 #![feature(generic_arg_infer)]
-#![feature(array_zip)]
+#![feature(let_chains)]
 
 pub mod color;
 pub mod cpu;
@@ -11,7 +11,6 @@ pub mod render;
 
 use cpu::Cpu;
 
-use minifb::Window;
 use render::FltkPixels;
 
 use std::fs::read;

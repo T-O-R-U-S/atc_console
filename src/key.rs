@@ -16,7 +16,6 @@ pub enum Key {
     Lft = 0xd3,
     Rght = 0xd4,
     Spc = 0xf0,
-    Esc = 0xf1,
 }
 
 use minifb::Key as MKey;
@@ -39,12 +38,11 @@ impl Key {
             Lft => MKey::Left,
             Rght => MKey::Right,
             Spc => MKey::Space,
-            Esc => MKey::Escape,
         }
     }
 
-    pub fn from_str(string: &str) -> Key {
-        match string.to_uppercase().as_str() {
+    pub fn from_str(string: &str) -> Option<Key> {
+        Some(match string.to_uppercase().as_str() {
             "Q" => Key::Q,
             "W" => Key::W,
             "E" => Key::E,
@@ -58,10 +56,9 @@ impl Key {
             "DWN" => Key::Dwn,
             "LFT" => Key::Lft,
             "RGHT" => Key::Rght,
-            "SPC" => Key::Spc,
-            "ESC" => Key::Esc,
-            _ => panic!(),
-        }
+            "SPC" | " " => Key::Spc,
+            _ => return None,
+        })
     }
 
     pub fn from_hex(hex: u8) -> Key {
@@ -90,8 +87,7 @@ impl Key {
             Dwn  = 0xd2,
             Lft  = 0xd3,
             Rght = 0xd4,
-            Spc  = 0xf0,
-            Esc  = 0xf1
+            Spc  = 0xf0
         }
     }
 }

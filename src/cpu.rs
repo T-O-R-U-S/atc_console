@@ -1,8 +1,5 @@
-use minifb::{KeyRepeat, Window, WindowOptions};
-
 use crate::{color::Colour, key::Key, render::RenderBackend, HEIGHT, RES, WIDTH};
 
-#[derive(Debug)]
 pub struct Cpu<T: RenderBackend> {
     pub memory: [Mem; 255],
     pub buf: [Colour; RES],
@@ -29,7 +26,6 @@ impl Mem {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct HeaderData {
     title: String,
     repeat: bool,

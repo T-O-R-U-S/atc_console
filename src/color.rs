@@ -30,8 +30,9 @@ use Colour::*;
 
 impl Colour {
     pub fn into_rgba(self) -> [u8; 4] {
-        // TODO: Implement this.
-        [0xff, 0x00, 0x00, 0xff]
+        let [b, g, r, _] = (self as u32).to_ne_bytes();
+        
+        [r, g, b, 0xff]
     }
 
     pub fn from_hex(num: u8) -> Self {
@@ -52,7 +53,7 @@ impl Colour {
             0x30 => Brown,
             0xac => Purple,
             0xbf => Pink,
-            _ => panic!("Nonexistent colour called"),
+            _ => panic!("Unknown colour hexcode!"),
         }
     }
 }
