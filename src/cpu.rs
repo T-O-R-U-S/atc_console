@@ -29,6 +29,8 @@ impl Mem {
 pub struct HeaderData {
     title: String,
     repeat: bool,
+    // TODO: impl alt_colours
+    #[allow(dead_code)]
     alt_colours: bool,
 }
 
