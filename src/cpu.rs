@@ -17,11 +17,11 @@ pub enum Mem {
 }
 
 impl Mem {
-    pub fn to_num(&self) -> f64 {
+    pub fn to_num(&self) -> Result<f64, ()> {
         match self {
-            Mem::Int(i) => *i as f64,
-            Mem::Float(i) => *i,
-            any => panic!("Expected int, found {any:?}"),
+            Mem::Int(i) => Ok(*i as f64),
+            Mem::Float(i) => Ok(*i),
+            any => Err(()),
         }
     }
 }
@@ -36,14 +36,35 @@ pub struct HeaderData {
 
 pub struct ByteCode(Vec<u8>, usize);
 
+pub enum ByteOption<'a> {
+    Some(u8),
+    None(&'a ByteCode),
+}
+
+impl ByteOption<'_> {
+    pub fn unwrap(self) -> u8 {
+        match self {
+            ByteOption::Some(num) => num,
+            ByteOption::None(bytecode) => panic!("Unexpected EOF at byte {}", bytecode.1),
+        }
+    }
+
+    pub fn expect(self, panic_str: &str) -> u8 {
+        match self {
+            ByteOption::Some(num) => num,
+            ByteOption::None(bytecode) => panic!("{panic_str} @ {}", bytecode.1),
+        }
+    }
+}
+
 impl ByteCode {
-    pub fn next(&mut self) -> Option<u8> {
+    pub fn next(&mut self) -> ByteOption {
         let Some(out) = self.0.get(self.1) else {
-            return None
+            return ByteOption::None(self)
         };
         self.1 += 1;
 
-        Some(*out)
+        ByteOption::Some(*out)
     }
 
     pub fn jmp(&mut self, byte: usize) {
@@ -72,12 +93,12 @@ impl<T: RenderBackend> Cpu<T> {
     pub fn run(&mut self, bytecode: Vec<u8>) {
         let mut bytecode = ByteCode::new(bytecode);
 
-        while let Some(header @ 0x01..) = bytecode.next() {
+        while let ByteOption::Some(header @ 0x01..) = bytecode.next() {
             match header {
                 0x01 => {
                     let mut string = String::new();
                     // FIXME: Better way to do this?
-                    while let Some(byte @ 0x00 | byte @ 0x02..) = bytecode.next() {
+                    while let ByteOption::Some(byte @ 0x00 | byte @ 0x02..) = bytecode.next() {
                         match byte {
                             0x00 => string.push(bytecode.next().unwrap().into()),
                             any => string.push(any.into()),
@@ -95,7 +116,7 @@ impl<T: RenderBackend> Cpu<T> {
         }
 
         'a: loop {
-            while let Some(code) = bytecode.next() {
+            while let ByteOption::Some(code) = bytecode.next() {
                 if !self.window.is_open() {
                     break 'a;
                 }
@@ -109,10 +130,16 @@ impl<T: RenderBackend> Cpu<T> {
                         self.buf[x + y * WIDTH] = Colour::from_hex(clr);
                     }
                     0x02 => {
-                        let x: usize =
-                            self.memory[bytecode.next().unwrap() as usize].to_num() as usize;
-                        let y: usize =
-                            self.memory[bytecode.next().unwrap() as usize].to_num() as usize;
+                        let x_byte = bytecode.next().unwrap() as usize;
+                        let y_byte = bytecode.next().unwrap() as usize;
+                        let x: usize = self.memory[x_byte].to_num().expect(&format!(
+                            "Failed to cast {:?} to num at byte {}",
+                            self.memory[x_byte], bytecode.1
+                        )) as usize;
+                        let y: usize = self.memory[y_byte].to_num().expect(&format!(
+                            "Failed to cast {:?} to num at byte {}",
+                            self.memory[x_byte], bytecode.1
+                        )) as usize;
                         let clr = bytecode.next().unwrap();
                         self.buf[(x % WIDTH) + (y % HEIGHT) * WIDTH] = Colour::from_hex(clr);
                     }
@@ -121,32 +148,60 @@ impl<T: RenderBackend> Cpu<T> {
                         let rhs = bytecode.next().unwrap() as usize;
                         let addr = bytecode.next().unwrap() as usize;
 
-                        self.memory[addr] =
-                            Mem::Float(self.memory[lhs].to_num() / self.memory[rhs].to_num())
+                        self.memory[addr] = Mem::Float(
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) / self.memory[rhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )),
+                        )
                     }
                     0xf1 => {
                         let lhs = bytecode.next().unwrap() as usize;
                         let rhs = bytecode.next().unwrap() as usize;
                         let addr = bytecode.next().unwrap() as usize;
 
-                        self.memory[addr] =
-                            Mem::Float(self.memory[lhs].to_num() - self.memory[rhs].to_num())
+                        self.memory[addr] = Mem::Float(
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) - self.memory[rhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )),
+                        )
                     }
                     0xf2 => {
                         let lhs = bytecode.next().unwrap() as usize;
                         let rhs = bytecode.next().unwrap() as usize;
                         let addr = bytecode.next().unwrap() as usize;
 
-                        self.memory[addr] =
-                            Mem::Float(self.memory[lhs].to_num() + self.memory[rhs].to_num())
+                        self.memory[addr] = Mem::Float(
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) + self.memory[rhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )),
+                        )
                     }
                     0xf3 => {
                         let lhs = bytecode.next().unwrap() as usize;
                         let rhs = bytecode.next().unwrap() as usize;
                         let addr = bytecode.next().unwrap() as usize;
 
-                        self.memory[addr] =
-                            Mem::Float(self.memory[lhs].to_num() * self.memory[rhs].to_num())
+                        self.memory[addr] = Mem::Float(
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) * self.memory[rhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )),
+                        )
                     }
                     0xf4 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -154,7 +209,14 @@ impl<T: RenderBackend> Cpu<T> {
                         let addr = bytecode.next().unwrap() as usize;
 
                         self.memory[addr] = Mem::Int(
-                            self.memory[lhs].to_num() as i64 / self.memory[rhs].to_num() as i64,
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) as i64
+                                / self.memory[rhs].to_num().expect(&format!(
+                                    "Failed to cast {:?} to number at byte {}",
+                                    self.memory[lhs], bytecode.1
+                                )) as i64,
                         )
                     }
                     0xf5 => {
@@ -163,7 +225,14 @@ impl<T: RenderBackend> Cpu<T> {
                         let addr = bytecode.next().unwrap() as usize;
 
                         self.memory[addr] = Mem::Int(
-                            self.memory[lhs].to_num() as i64 - self.memory[rhs].to_num() as i64,
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) as i64
+                                - self.memory[rhs].to_num().expect(&format!(
+                                    "Failed to cast {:?} to number at byte {}",
+                                    self.memory[lhs], bytecode.1
+                                )) as i64,
                         )
                     }
                     0xf6 => {
@@ -172,7 +241,14 @@ impl<T: RenderBackend> Cpu<T> {
                         let addr = bytecode.next().unwrap() as usize;
 
                         self.memory[addr] = Mem::Int(
-                            self.memory[lhs].to_num() as i64 + self.memory[rhs].to_num() as i64,
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) as i64
+                                + self.memory[rhs].to_num().expect(&format!(
+                                    "Failed to cast {:?} to number at byte {}",
+                                    self.memory[lhs], bytecode.1
+                                )) as i64,
                         )
                     }
                     0xf7 => {
@@ -181,7 +257,14 @@ impl<T: RenderBackend> Cpu<T> {
                         let addr = bytecode.next().unwrap() as usize;
 
                         self.memory[addr] = Mem::Int(
-                            self.memory[lhs].to_num() as i64 * self.memory[rhs].to_num() as i64,
+                            self.memory[lhs].to_num().expect(&format!(
+                                "Failed to cast {:?} to number at byte {}",
+                                self.memory[lhs], bytecode.1
+                            )) as i64
+                                * self.memory[rhs].to_num().expect(&format!(
+                                    "Failed to cast {:?} to number at byte {}",
+                                    self.memory[lhs], bytecode.1
+                                )) as i64,
                         )
                     }
                     0xb0 => {
@@ -192,6 +275,34 @@ impl<T: RenderBackend> Cpu<T> {
                             Mem::Int(0x01)
                         } else {
                             Mem::Int(0x00)
+                        }
+                    }
+                    0xb1 => {
+                        let lhs_addr = bytecode.next().unwrap() as usize;
+                        let rhs_addr = bytecode.next().unwrap() as usize;
+
+                        let lhs = self.memory[lhs_addr];
+                        let rhs = self.memory[rhs_addr];
+
+                        let out = bytecode.next().unwrap() as usize;
+
+                        self.memory[out] = match lhs.to_num() > rhs.to_num() {
+                            true => Mem::Int(0x01),
+                            false => Mem::Int(0x00),
+                        }
+                    }
+                    0xb2 => {
+                        let lhs_addr = bytecode.next().unwrap() as usize;
+                        let rhs_addr = bytecode.next().unwrap() as usize;
+
+                        let lhs = self.memory[lhs_addr];
+                        let rhs = self.memory[rhs_addr];
+
+                        let out = bytecode.next().unwrap() as usize;
+
+                        self.memory[out] = match lhs.to_num() < rhs.to_num() {
+                            true => Mem::Int(0x01),
+                            false => Mem::Int(0x00),
                         }
                     }
                     0xa1 => {
@@ -278,9 +389,7 @@ impl<T: RenderBackend> Cpu<T> {
                         ];
 
                         if self.memory[var_addr] == Mem::Int(0x01) {
-                            bytecode.jmp(
-                                usize::from_le_bytes(jmp_byte)
-                            )
+                            bytecode.jmp(usize::from_le_bytes(jmp_byte))
                         }
                     }
                     0xe2 => {
@@ -298,10 +407,31 @@ impl<T: RenderBackend> Cpu<T> {
                         ];
 
                         if self.memory[var_addr] != Mem::Int(0x01) {
-                            bytecode.jmp(
-                                usize::from_le_bytes(jmp_byte)
-                            )
+                            bytecode.jmp(usize::from_le_bytes(jmp_byte))
                         }
+                    }
+                    0xe3 => {
+                        let jmp_byte = [
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                            bytecode.next().unwrap(),
+                        ];
+
+                        bytecode.jmp(usize::from_le_bytes(jmp_byte));
+                    }
+                    0xe4 => {
+                        let byte_addr = bytecode.next().unwrap() as usize;
+
+                        let Mem::Int(jmp_byte) = self.memory[byte_addr] else {
+                            panic!("Expected int for JMP statement at byte {}", bytecode.1)
+                        };
+
+                        bytecode.jmp(jmp_byte as usize)
                     }
                     0xd0 => {
                         let keycode = Key::from_hex(bytecode.next().unwrap());
