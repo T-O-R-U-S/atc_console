@@ -49,9 +49,7 @@ The instructions are focused more on ergonomics over being easier to implement a
 | Create/replace variable | `0xa1` | [Type](type_code.md), **Eight** data bytes, Addr Num                                                                            |
 | Create variable         | `0xa2` | [Type](type_code.md), **Eight** data bytes, Addr Num. The distinction here is that this does not replace pre-existing variables |
 | Write array item        | `0xa3` | Array Addr, Arr Idx (0-7), Byte to write                                                                                        |
-| TJump                   | `0xe1` | Condition (Addr), Byte to jump to if true                                                                                       |
-| FJump                   | `0xe2` | Condition (Addr), Byte to jump to if false                                                                                      |
+| TJump                   | `0xe1` | Condition (Addr), Byte to jump to if true (8bytes input)                                                                        |
+| FJump                   | `0xe2` | Condition (Addr), Byte to jump to if false (8bytes input)                                                                       |
 | Jump                    | `0xe3` | Byte to jump to                                                                                                                 |
-| Jump                    | `0xe3` | Addr of byte                                                                                                                    |
-
 | Check input             | `0xd0` | [Keycode](key_code.md), Addr Num                                                                                                |

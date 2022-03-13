@@ -17,11 +17,11 @@ pub enum Mem {
 }
 
 impl Mem {
-    pub fn to_num(&self) -> Result<f64, ()> {
+    pub fn to_num(&self) -> Result<f64, Mem> {
         match self {
             Mem::Int(i) => Ok(*i as f64),
             Mem::Float(i) => Ok(*i),
-            any => Err(()),
+            any => Err(*any),
         }
     }
 }
@@ -67,6 +67,12 @@ impl ByteCode {
         ByteOption::Some(*out)
     }
 
+    pub fn shift(&mut self) -> ByteOption {
+        let out = self.0.remove(0);
+
+        ByteOption::Some(out)
+    }
+
     pub fn jmp(&mut self, byte: usize) {
         self.1 = byte
     }
@@ -93,14 +99,14 @@ impl<T: RenderBackend> Cpu<T> {
     pub fn run(&mut self, bytecode: Vec<u8>) {
         let mut bytecode = ByteCode::new(bytecode);
 
-        while let ByteOption::Some(header @ 0x01..) = bytecode.next() {
+        while let ByteOption::Some(header @ 0x01..) = bytecode.shift() {
             match header {
                 0x01 => {
                     let mut string = String::new();
                     // FIXME: Better way to do this?
-                    while let ByteOption::Some(byte @ 0x00 | byte @ 0x02..) = bytecode.next() {
+                    while let ByteOption::Some(byte @ 0x00 | byte @ 0x02..) = bytecode.shift() {
                         match byte {
-                            0x00 => string.push(bytecode.next().unwrap().into()),
+                            0x00 => string.push(bytecode.shift().unwrap().into()),
                             any => string.push(any.into()),
                         }
                     }
@@ -126,7 +132,6 @@ impl<T: RenderBackend> Cpu<T> {
                         let x: usize = bytecode.next().unwrap().into();
                         let y: usize = bytecode.next().unwrap().into();
                         let clr = bytecode.next().unwrap();
-                        // This is the only way to invert the Y axis
                         self.buf[x + y * WIDTH] = Colour::from_hex(clr);
                     }
                     0x02 => {
@@ -138,7 +143,7 @@ impl<T: RenderBackend> Cpu<T> {
                         )) as usize;
                         let y: usize = self.memory[y_byte].to_num().expect(&format!(
                             "Failed to cast {:?} to num at byte {}",
-                            self.memory[x_byte], bytecode.1
+                            self.memory[y_byte], bytecode.1
                         )) as usize;
                         let clr = bytecode.next().unwrap();
                         self.buf[(x % WIDTH) + (y % HEIGHT) * WIDTH] = Colour::from_hex(clr);

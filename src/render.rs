@@ -74,7 +74,7 @@ impl RenderBackend for FltkPixels {
         let app = App::default();
         let mut win = FWin::default()
             .with_label("ATC Fantasy Console")
-            .with_size(WIDTH as i32, HEIGHT as i32);
+            .with_size(WIDTH as i32 * 2, HEIGHT as i32 * 2);
 
         win.end();
 
