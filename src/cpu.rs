@@ -1,3 +1,5 @@
+use fltk::app;
+
 use crate::{color::Colour, key::Key, render::RenderBackend, HEIGHT, RES, WIDTH};
 
 pub struct Cpu<T: RenderBackend> {
@@ -153,6 +155,39 @@ impl<T: RenderBackend> Cpu<T> {
                         )) as usize;
                         let clr = bytecode.next().unwrap();
                         self.buf[(x % WIDTH) + (y % HEIGHT) * WIDTH] = Colour::from_hex(clr);
+                    }
+                    0x03 => {
+                        let mut byte_arr = [[0; 8]; 8];
+
+                        for i in 0..8 {
+                            let arr_addr = bytecode.next().unwrap() as usize;
+
+                            let Mem::ByteArr(arr) = self.memory[arr_addr] else {
+                                panic!("Expected byte array.")
+                            };
+
+                            byte_arr[i] = arr;
+                        }
+
+                        let x_addr = bytecode.next().unwrap() as usize;
+                        let y_addr = bytecode.next().unwrap() as usize;
+
+                        let Mem::Int(x) = self.memory[x_addr] else {
+                            panic!("Expected int at addr {x_addr}, but instead found {:?}", self.memory[x_addr])
+                        };
+
+                        let Mem::Int(y) = self.memory[y_addr] else {
+                            panic!("Expected int at addr {y_addr}, but instead found {:?}", self.memory[y_addr])
+                        };
+
+                        for (y_offset, row) in byte_arr.into_iter().enumerate() {
+                            for (x_offset, pix) in row.into_iter().enumerate() {
+                                let x = x as usize + x_offset;
+                                let y = (y as usize + y_offset) * WIDTH;
+
+                                self.buf[x + y] = Colour::from_hex(pix);
+                            }
+                        }
                     }
                     0xf0 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -454,11 +489,13 @@ impl<T: RenderBackend> Cpu<T> {
                             self.memory[addr] = Mem::Int(0x00)
                         };
                     }
-                    
+                    0xfb => {
+                        self.window.update(self.buf);
+                    }
                     inst => panic!("Unrecognized instruction: {inst:x} at byte {}", bytecode.1),
                 }
 
-                self.window.update(self.buf);
+                app::awake();
             }
 
             if !self.header.repeat {

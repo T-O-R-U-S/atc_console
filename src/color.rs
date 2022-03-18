@@ -56,7 +56,7 @@ impl Colour {
             0xac => Purple,
             0xbf => Pink,
             0x99 => Transparent,
-            any => panic!("Unknown colour hexcode: {any:x}!"),
+            any => panic!("Unknown colour hexcode: {any:0>2x}!"),
         }
     }
 }

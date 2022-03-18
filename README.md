@@ -35,7 +35,8 @@ The instructions are focused more on ergonomics over being easier to implement a
 | No Op                   | `0x00` |                                                                                                                                 |
 | Write pixel             | `0x01` | X pos, Inverted Y pos, Colour                                                                                                   |
 | Write pixel using mem   | `0x02` | X pos addr, Inverted Y pos addr, Colour                                                                                         |
-| Draw Sprite | `0xf2` | **Eight** Byte Array Addresses (Colour codes), X pos addr, Y pos addr |
+| Draw Sprite | `0x03` | **Eight** Byte Array Addresses (Colour codes), X pos addr, Y pos addr |
+| Flush buffer (Render frame) | `0xfb` |  |
 | Float Div               | `0xf0` | LHS Addr, RHS Addr, Addr Num                                                                                                    |
 | Float Sub               | `0xf1` | LHS Addr, RHS Addr, Addr Num                                                                                                    |
 | Float Add               | `0xf2` | LHS Addr, RHS Addr, Addr Num                                                                                                    |
