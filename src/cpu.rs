@@ -99,12 +99,11 @@ impl<T: RenderBackend> Cpu<T> {
     pub fn run(&mut self, bytecode: Vec<u8>) {
         let mut bytecode = ByteCode::new(bytecode);
 
-        while let ByteOption::Some(header @ 0x01..) = bytecode.shift() {
+        while let ByteOption::Some(header) = bytecode.shift() && header != 0 {
             match header {
                 0x01 => {
                     let mut string = String::new();
-                    // FIXME: Better way to do this?
-                    while let ByteOption::Some(byte @ 0x00 | byte @ 0x02..) = bytecode.shift() {
+                    while let ByteOption::Some(byte) = bytecode.shift() && byte != 0x01 {
                         match byte {
                             0x00 => string.push(bytecode.shift().unwrap().into()),
                             any => string.push(any.into()),
@@ -122,10 +121,14 @@ impl<T: RenderBackend> Cpu<T> {
         }
 
         'a: loop {
+
             while let ByteOption::Some(code) = bytecode.next() {
                 if !self.window.is_open() {
                     break 'a;
                 }
+
+                println!("{code:0>2x}");
+
                 match code {
                     0x00 => {}
                     0x01 => {
@@ -138,11 +141,11 @@ impl<T: RenderBackend> Cpu<T> {
                         let x_byte = bytecode.next().unwrap() as usize;
                         let y_byte = bytecode.next().unwrap() as usize;
                         let x: usize = self.memory[x_byte].to_num().expect(&format!(
-                            "Failed to cast {:?} to num at byte {}",
+                            "Failed to cast {:?} to num at byte {} (attempted to access address x: {x_byte:0>2x}, y: {y_byte:0>2x})",
                             self.memory[x_byte], bytecode.1
                         )) as usize;
                         let y: usize = self.memory[y_byte].to_num().expect(&format!(
-                            "Failed to cast {:?} to num at byte {}",
+                            "Failed to cast {:?} to num at byte {} (attempted to access address y: {y_byte:0>2x}, x: {x_byte:0>2x})",
                             self.memory[y_byte], bytecode.1
                         )) as usize;
                         let clr = bytecode.next().unwrap();
@@ -448,7 +451,8 @@ impl<T: RenderBackend> Cpu<T> {
                             self.memory[addr] = Mem::Int(0x00)
                         };
                     }
-                    inst => panic!("Unrecognized instruction: {inst:x}"),
+                    
+                    inst => panic!("Unrecognized instruction: {inst:x} at byte {}", bytecode.1),
                 }
 
                 self.window.update(self.buf);
@@ -458,7 +462,9 @@ impl<T: RenderBackend> Cpu<T> {
                 break;
             }
 
-            bytecode.jmp(0)
+            bytecode.jmp(0);
+
+            println!("{:?}", bytecode.0);
         }
     }
 }

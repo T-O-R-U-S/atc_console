@@ -13,7 +13,7 @@ use cpu::Cpu;
 
 use render::FltkPixels;
 
-use std::fs::read;
+use std::{fs::read, env::args};
 
 pub const WIDTH: usize = 255;
 pub const HEIGHT: usize = 255;
@@ -22,7 +22,9 @@ pub const RES: usize = WIDTH * HEIGHT;
 fn main() {
     let mut cpu: Cpu<FltkPixels> = Cpu::new();
 
-    let bytecode = read("./game.atc").unwrap();
+    let file_name = args().nth(1).unwrap();
+
+    let bytecode = read(&file_name).unwrap();
 
     cpu.run(bytecode);
 }

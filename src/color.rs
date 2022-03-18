@@ -53,7 +53,7 @@ impl Colour {
             0x30 => Brown,
             0xac => Purple,
             0xbf => Pink,
-            _ => panic!("Unknown colour hexcode!"),
+            any => panic!("Unknown colour hexcode: {any:x}!"),
         }
     }
 }
