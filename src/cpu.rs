@@ -32,6 +32,7 @@ pub struct HeaderData {
     // TODO: impl alt_colours
     #[allow(dead_code)]
     alt_colours: bool,
+    keep_open: bool,
 }
 
 pub struct ByteCode(Vec<u8>, usize);
@@ -91,6 +92,7 @@ impl<T: RenderBackend> Cpu<T> {
                 title: "ATC Fantasy Console".into(),
                 repeat: false,
                 alt_colours: false,
+                keep_open: false
             },
             window: T::new(),
         }
@@ -116,6 +118,7 @@ impl<T: RenderBackend> Cpu<T> {
                     self.header.repeat = true;
                 }
                 0x03 => todo!("ERR: Alt colour pallette not implemented!"),
+                0x04 => self.header.keep_open = true,
                 any => panic!("Unexpected byte ({any:x}) in header info"),
             }
         }
@@ -127,7 +130,7 @@ impl<T: RenderBackend> Cpu<T> {
                     break 'a;
                 }
 
-                println!("{code:0>2x}");
+                println!("{code:0>2x} @ {}", bytecode.1);
 
                 match code {
                     0x00 => {}
@@ -459,12 +462,13 @@ impl<T: RenderBackend> Cpu<T> {
             }
 
             if !self.header.repeat {
+                if self.header.keep_open {
+                    while self.window.is_open() {}
+                }
                 break;
             }
 
             bytecode.jmp(0);
-
-            println!("{:?}", bytecode.0);
         }
     }
 }

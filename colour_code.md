@@ -18,3 +18,4 @@
 | Brown | `30` |
 | Purple | `ac` |
 | Pink | `bf` |
+| Transparent | `99` |

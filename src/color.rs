@@ -24,6 +24,8 @@ pub enum Colour {
     Pink = 0xFF0074,
 
     LightGray = 0xbcbcbc,
+
+    Transparent = 0x999999
 }
 
 use Colour::*;
@@ -53,6 +55,7 @@ impl Colour {
             0x30 => Brown,
             0xac => Purple,
             0xbf => Pink,
+            0x99 => Transparent,
             any => panic!("Unknown colour hexcode: {any:x}!"),
         }
     }

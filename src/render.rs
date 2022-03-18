@@ -54,6 +54,9 @@ impl RenderBackend for FltkPixels {
         let pixels = self.2.get_frame().chunks_exact_mut(4).enumerate();
 
         for (idx, pix) in pixels {
+            if buf[idx] as u32 == (Colour::Transparent as u32) {
+                continue
+            }
             pix.copy_from_slice(&buf[idx].into_rgba());
         }
 
