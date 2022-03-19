@@ -1,7 +1,7 @@
 use crate::{color::Colour, key::Key, HEIGHT, RES, WIDTH};
 
 use fltk::{
-    enums::{Key as FKey, Color},
+    enums::{Key as FKey},
     app::{self, App},
     prelude::*,
     window::{Window as FWin},
