@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 #[repr(u32)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Colour {
     Black = 0x000000,
     White = 0xfcfcfc,
@@ -25,7 +25,7 @@ pub enum Colour {
 
     LightGray = 0xbcbcbc,
 
-    Transparent = 0x999999
+    Transparent = 0xed74d7
 }
 
 use Colour::*;

@@ -1,5 +1,3 @@
-use fltk::app;
-
 use crate::{color::Colour, key::Key, render::RenderBackend, HEIGHT, RES, WIDTH};
 
 pub struct Cpu<T: RenderBackend> {
@@ -492,10 +490,19 @@ impl<T: RenderBackend> Cpu<T> {
                     0xfb => {
                         self.window.update(self.buf);
                     }
+                    0xfc => {
+                        let cls = bytecode.next().unwrap();
+
+                        let cls = Colour::from_hex(cls);
+
+                        self.buf = [cls; RES];
+                    }
                     inst => panic!("Unrecognized instruction: {inst:x} at byte {}", bytecode.1),
                 }
 
-                app::awake();
+                // Must be used when using FLTK, otherwise
+                // the frame will not render.
+                self.window.fltk_up();
             }
 
             if !self.header.repeat {

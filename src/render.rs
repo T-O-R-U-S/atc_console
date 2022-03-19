@@ -1,7 +1,7 @@
 use crate::{color::Colour, key::Key, HEIGHT, RES, WIDTH};
 
 use fltk::{
-    enums::Key as FKey,
+    enums::{Key as FKey, Color},
     app::{self, App},
     prelude::*,
     window::{Window as FWin},
@@ -20,11 +20,19 @@ pub trait RenderBackend {
     fn is_open(&self) -> bool;
 
     fn key(&self, key: Key) -> bool;
+
+    fn fltk_up(&self) {}
+}
+
+impl From<Colour> for u32 {
+    fn from(clr: Colour) -> Self {
+        clr as u32
+    }
 }
 
 impl RenderBackend for MWin {
     fn update(&mut self, buf: [Colour; HEIGHT * WIDTH]) {
-        self.update_with_buffer(&buf.map(|e| e as u32), WIDTH, HEIGHT)
+        self.update_with_buffer(&buf.map(u32::from), WIDTH, HEIGHT)
             .unwrap()
     }
 
@@ -45,19 +53,22 @@ impl RenderBackend for MWin {
     fn key(&self, key: Key) -> bool {
         self.is_key_pressed(key.to_fb_key(), minifb::KeyRepeat::No)
     }
+
+    fn fltk_up(&self) {}
 }
 
 pub struct FltkPixels(FWin, App, Pixels);
 
 impl RenderBackend for FltkPixels {
     fn update(&mut self, buf: [Colour; RES]) {
-        let pixels = self.2.get_frame().chunks_exact_mut(4).enumerate();
+        let pixels = self.2.get_frame().chunks_exact_mut(4);
 
-        for (idx, pix) in pixels {
-            if buf[idx] as u32 == (Colour::Transparent as u32) {
-                continue
+        for (pix, new) in pixels.zip(buf) {
+            println!("{pix:0>3?}");
+
+            if new != Colour::Transparent {
+                pix.copy_from_slice(&new.into_rgba());
             }
-            pix.copy_from_slice(&buf[idx].into_rgba());
         }
 
         if self
@@ -115,5 +126,9 @@ impl RenderBackend for FltkPixels {
         } else {
             false
         }
+    }
+
+    fn fltk_up(&self) {
+        app::awake();
     }
 }

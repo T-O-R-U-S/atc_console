@@ -18,4 +18,4 @@
 | Brown | `30` |
 | Purple | `ac` |
 | Pink | `bf` |
-| Transparent | `99` |
+| Skip updating pixel | `99` |

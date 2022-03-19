@@ -33,9 +33,10 @@ The instructions are focused more on ergonomics over being easier to implement a
 | Name                    | Code   | Parameters                                                                                                                      |
 | ----------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | No Op                   | `0x00` |                                                                                                                                 |
-| Write pixel             | `0x01` | X pos, Inverted Y pos, Colour                                                                                                   |
-| Write pixel using mem   | `0x02` | X pos addr, Inverted Y pos addr, Colour                                                                                         |
-| Draw Sprite | `0x03` | **Eight** Byte Array Addresses (Colour codes), X pos addr, Y pos addr |
+| Write pixel             | `0x01` | X pos, Inverted Y pos, [Colour](colour_code.md)                                                                                                   |
+| Write pixel using mem   | `0x02` | X pos addr, Inverted Y pos addr, [Colour](colour_code.md)                                                                                         |
+| Draw Sprite | `0x03` | **Eight** Byte Array Addresses ([Colour](colour_code.md) codes), X pos addr, Y pos addr |
+| Clear screen | `0xfc` | Input [colour](colour_code.md) code |
 | Flush buffer (Render frame) | `0xfb` |  |
 | Float Div               | `0xf0` | LHS Addr, RHS Addr, Addr Num                                                                                                    |
 | Float Sub               | `0xf1` | LHS Addr, RHS Addr, Addr Num                                                                                                    |
