@@ -33,6 +33,19 @@ pub struct HeaderData {
     #[allow(dead_code)]
     alt_colours: bool,
     keep_open: bool,
+    debug: bool
+}
+
+impl Default for HeaderData {
+    fn default() -> Self {
+        HeaderData {
+            title: "ATC Fantasy Console".into(),
+            repeat: false,
+            alt_colours: false,
+            keep_open: false,
+            debug: false
+        }
+    }
 }
 
 pub struct ByteCode(Vec<u8>, usize);
@@ -88,12 +101,7 @@ impl<T: RenderBackend> Cpu<T> {
         Cpu {
             memory: [Mem::Nil; 255],
             buf: [Colour::Green; 65025],
-            header: HeaderData {
-                title: "ATC Fantasy Console".into(),
-                repeat: false,
-                alt_colours: false,
-                keep_open: false
-            },
+            header: HeaderData::default(),
             window: T::new(),
         }
     }
@@ -119,6 +127,7 @@ impl<T: RenderBackend> Cpu<T> {
                 }
                 0x03 => todo!("ERR: Alt colour pallette not implemented!"),
                 0x04 => self.header.keep_open = true,
+                0xd5 => self.header.debug = true,
                 any => panic!("Unexpected byte ({any:x}) in header info"),
             }
         }
@@ -139,6 +148,10 @@ impl<T: RenderBackend> Cpu<T> {
                         let y: usize = bytecode.next().unwrap().into();
                         let clr = bytecode.next().unwrap();
                         self.buf[x + y * WIDTH] = Colour::from_hex(clr);
+
+                        if self.header.debug {
+                            println!("CPIX CALL :: ({x}, {y}) => {clr:x}");
+                        }
                     }
                     0x02 => {
                         let x_byte = bytecode.next().unwrap() as usize;
@@ -153,6 +166,10 @@ impl<T: RenderBackend> Cpu<T> {
                         )) as usize;
                         let clr = bytecode.next().unwrap();
                         self.buf[(x % WIDTH) + (y % HEIGHT) * WIDTH] = Colour::from_hex(clr);
+
+                        if self.header.debug {
+                            println!("PIX CALL :: ({x} @ {x_byte:0>2x}, {y} @ {y_byte:0>2x}) => {clr:x}");
+                        }
                     }
                     0x03 => {
                         let mut byte_arr = [[0; 8]; 8];
@@ -178,13 +195,17 @@ impl<T: RenderBackend> Cpu<T> {
                             panic!("Expected int at addr {y_addr}, but instead found {:?}", self.memory[y_addr])
                         };
 
-                        for (y_offset, row) in byte_arr.into_iter().enumerate() {
-                            for (x_offset, pix) in row.into_iter().enumerate() {
+                        for (y_offset, row) in byte_arr.iter().enumerate() {
+                            for (x_offset, pix) in row.iter().enumerate() {
                                 let x = x as usize + x_offset;
                                 let y = (y as usize + y_offset) * WIDTH;
 
-                                self.buf[x + y] = Colour::from_hex(pix);
+                                self.buf[x + y] = Colour::from_hex(*pix);
                             }
+                        }
+
+                        if self.header.debug {
+                            println!("SPR CALL :: ({x}, {y}) @ {byte_arr:0>2x?}");
                         }
                     }
                     0xf0 => {
@@ -200,7 +221,11 @@ impl<T: RenderBackend> Cpu<T> {
                                 "Failed to cast {:?} to number at byte {}",
                                 self.memory[lhs], bytecode.1
                             )),
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("FDIV CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf1 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -215,7 +240,11 @@ impl<T: RenderBackend> Cpu<T> {
                                 "Failed to cast {:?} to number at byte {}",
                                 self.memory[lhs], bytecode.1
                             )),
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("FSUB CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf2 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -230,7 +259,11 @@ impl<T: RenderBackend> Cpu<T> {
                                 "Failed to cast {:?} to number at byte {}",
                                 self.memory[lhs], bytecode.1
                             )),
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("FADD CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf3 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -245,7 +278,11 @@ impl<T: RenderBackend> Cpu<T> {
                                 "Failed to cast {:?} to number at byte {}",
                                 self.memory[lhs], bytecode.1
                             )),
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("FMUL CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf4 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -261,7 +298,11 @@ impl<T: RenderBackend> Cpu<T> {
                                     "Failed to cast {:?} to number at byte {}",
                                     self.memory[lhs], bytecode.1
                                 )) as i64,
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("DIV CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf5 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -277,7 +318,11 @@ impl<T: RenderBackend> Cpu<T> {
                                     "Failed to cast {:?} to number at byte {}",
                                     self.memory[lhs], bytecode.1
                                 )) as i64,
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("SUB CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf6 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -293,7 +338,11 @@ impl<T: RenderBackend> Cpu<T> {
                                     "Failed to cast {:?} to number at byte {}",
                                     self.memory[lhs], bytecode.1
                                 )) as i64,
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("ADD CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xf7 => {
                         let lhs = bytecode.next().unwrap() as usize;
@@ -309,7 +358,11 @@ impl<T: RenderBackend> Cpu<T> {
                                     "Failed to cast {:?} to number at byte {}",
                                     self.memory[lhs], bytecode.1
                                 )) as i64,
-                        )
+                        );
+
+                        if self.header.debug {
+                            println!("MUL CALL :: ({:?} @ {lhs:0>2x}, {:?} @ {rhs:0>2x}) => {addr:0>2x}", self.memory[lhs], self.memory[rhs]);
+                        }
                     }
                     0xb0 => {
                         let addr_num = bytecode.next().unwrap() as usize;
@@ -319,6 +372,10 @@ impl<T: RenderBackend> Cpu<T> {
                             Mem::Int(0x01)
                         } else {
                             Mem::Int(0x00)
+                        };
+
+                        if self.header.debug {
+                            println!("NOT CALL :: {:?} @ {addr_num} => {out_addr}", self.memory[addr_num]);
                         }
                     }
                     0xb1 => {
@@ -333,6 +390,10 @@ impl<T: RenderBackend> Cpu<T> {
                         self.memory[out] = match lhs.to_num() > rhs.to_num() {
                             true => Mem::Int(0x01),
                             false => Mem::Int(0x00),
+                        };
+
+                        if self.header.debug {
+                            println!("GT CALL :: ({:?} @ {lhs:0>2x?} > {:?} @ {rhs:0>2x?}) => {out:0>2x}", self.memory[lhs_addr], self.memory[rhs_addr]);
                         }
                     }
                     0xb2 => {
@@ -347,6 +408,10 @@ impl<T: RenderBackend> Cpu<T> {
                         self.memory[out] = match lhs.to_num() < rhs.to_num() {
                             true => Mem::Int(0x01),
                             false => Mem::Int(0x00),
+                        };
+
+                        if self.header.debug {
+                            println!("LT CALL :: ({:?} @ {lhs:0>2x?} > {:?} @ {rhs:0>2x?}) => {out:0>2x}", self.memory[lhs_addr], self.memory[rhs_addr]);
                         }
                     }
                     0xa1 => {
@@ -374,6 +439,10 @@ impl<T: RenderBackend> Cpu<T> {
                         };
 
                         self.memory[addr] = out;
+
+                        if self.header.debug {
+                            println!("VAR CALL :: {data:0>2x?} of type {ty:0>2x} @ {addr} => {:?}", out);
+                        }
                     }
                     0xa2 => {
                         let ty = bytecode.next().unwrap();
@@ -402,6 +471,10 @@ impl<T: RenderBackend> Cpu<T> {
 
                             self.memory[addr] = out;
                         }
+
+                        if self.header.debug {
+                            println!("LET CALL :: {data:0>2x?} of type {ty:0>2x} @ {addr} => {:?}", self.memory[addr]);
+                        }
                     }
                     0xa3 => {
                         let arr_addr = bytecode.next().unwrap() as usize;
@@ -410,6 +483,8 @@ impl<T: RenderBackend> Cpu<T> {
                                                         };
                         let item = bytecode.next().unwrap();
 
+                        println!("ARRW INFO :: {arr_addr:0>2x}[{idx}] WAS {:?}", self.memory[arr_addr]);
+
                         match &mut self.memory[arr_addr] {
                             Mem::ByteArr(arr) => arr[idx] = item,
                             Mem::Str(arr) => arr[idx] = item as char,
@@ -417,11 +492,15 @@ impl<T: RenderBackend> Cpu<T> {
                                 panic!("Expected array, found {any:?} at address {arr_addr:x}")
                             }
                         }
+
+                        if self.header.debug {
+                            println!("ARRW CALL :: {arr_addr:0>2x}[{idx}] = {item:0>2x}");
+                        }
                     }
                     0xe1 => {
                         let var_addr = bytecode.next().unwrap() as usize;
 
-                        let jmp_byte = [
+                        let jmp_byte = usize::from_le_bytes([
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
@@ -430,16 +509,19 @@ impl<T: RenderBackend> Cpu<T> {
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
-                        ];
+                        ]);
 
                         if self.memory[var_addr] == Mem::Int(0x01) {
-                            bytecode.jmp(usize::from_le_bytes(jmp_byte))
+                            bytecode.jmp(jmp_byte)
+                        }
+                        if self.header.debug {
+                            println!("TJMP CALL :: TO {jmp_byte} IF {var_addr} WHICH IS {:?}", self.memory[var_addr]);
                         }
                     }
                     0xe2 => {
                         let var_addr = bytecode.next().unwrap() as usize;
 
-                        let jmp_byte = [
+                        let jmp_byte = usize::from_le_bytes([
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
@@ -448,14 +530,18 @@ impl<T: RenderBackend> Cpu<T> {
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
-                        ];
+                        ]);
 
                         if self.memory[var_addr] != Mem::Int(0x01) {
-                            bytecode.jmp(usize::from_le_bytes(jmp_byte))
+                            bytecode.jmp(jmp_byte)
+                        }
+
+                        if self.header.debug {
+                            println!("FJMP CALL :: TO {jmp_byte} IF NOT {var_addr} WHICH IS {:?}", self.memory[var_addr]);
                         }
                     }
                     0xe3 => {
-                        let jmp_byte = [
+                        let jmp_byte = usize::from_le_bytes([
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
@@ -464,9 +550,13 @@ impl<T: RenderBackend> Cpu<T> {
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
                             bytecode.next().unwrap(),
-                        ];
+                        ]);
 
-                        bytecode.jmp(usize::from_le_bytes(jmp_byte));
+                        bytecode.jmp(jmp_byte);
+
+                        if self.header.debug {
+                            println!("JMP CALL :: TO {jmp_byte} WHICH IS {:?}", bytecode.0.get(bytecode.1));
+                        }
                     }
                     0xe4 => {
                         let byte_addr = bytecode.next().unwrap() as usize;
@@ -475,7 +565,11 @@ impl<T: RenderBackend> Cpu<T> {
                             panic!("Expected int for JMP statement at byte {}", bytecode.1)
                         };
 
-                        bytecode.jmp(jmp_byte as usize)
+                        bytecode.jmp(jmp_byte as usize);
+
+                        if self.header.debug {
+                            println!("VJMP CALL :: TO {jmp_byte} @ {byte_addr:0>2x} WHICH IS {:?}", bytecode.0.get(bytecode.1));
+                        }
                     }
                     0xd0 => {
                         let keycode = Key::from_hex(bytecode.next().unwrap());
@@ -486,9 +580,17 @@ impl<T: RenderBackend> Cpu<T> {
                         } else {
                             self.memory[addr] = Mem::Int(0x00)
                         };
+
+                        if self.header.debug {
+                            println!("KEY CALL :: KC({keycode:0>2x?}) => {addr:0>2x} WHICH IS {:?}", self.memory[addr]);
+                        }
                     }
                     0xfb => {
                         self.window.update(self.buf);
+
+                        if self.header.debug {
+                            println!("RENDER CALL :: RENDERED FRAME SUCCESSFULLY");
+                        }
                     }
                     0xfc => {
                         let cls = bytecode.next().unwrap();
@@ -496,6 +598,10 @@ impl<T: RenderBackend> Cpu<T> {
                         let cls = Colour::from_hex(cls);
 
                         self.buf = [cls; RES];
+
+                        if self.header.debug {
+                            println!("CLS CALL :: CLEARED SCREEN TO COLOUR CODE {cls:0>2x?}");
+                        }
                     }
                     inst => panic!("Unrecognized instruction: {inst:x} at byte {}", bytecode.1),
                 }

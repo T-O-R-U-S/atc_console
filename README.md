@@ -16,7 +16,9 @@ If an input asks for multiple bytes, assume that it is in Little Endian order.
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `0x01`        | Marks the start/end of the game title                                                                                        |
 | `0x02`        | Include this byte to tell the interpreter to keep looping instead of closing down the program once it has finished executing |
+| `0x04` | Include this byte to tell the interpreter to keep the window open once the application has finished executing |
 | `0x03` (TODO) | Include this byte to tell the interpreter to use the alternative colour pallette. Currently, this does nothing though!       |
+| `0xd5` | Include this byte to tell the interpreter to print all debugging info to the terminal. |
 
 ### Instruction invocation format
 
