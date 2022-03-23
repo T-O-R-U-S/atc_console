@@ -1,10 +1,12 @@
-## ATC Fantasy Console
+# ATC Fantasy Console
 
-### .atc File Format
+## .atc File Format
 
 ### Fair warning; ATC is slow on some systems
 
-There is nothing I can really do about this. The library I chose to do this, `minifb`, is rather slow on macOS with regular frametimes of >40 ms.
+~~There is nothing I can really do about this. The library I chose to do this, `minifb`, is rather slow on macOS with regular frametimes of >40 ms.~~
+
+There are two rendering back-ends now that can be used. `minifb` is not fully supported, as it has been dropped in favour of `pixels` + `fltk`.
 
 #### File header
 

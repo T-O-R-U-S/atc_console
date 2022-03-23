@@ -64,17 +64,13 @@ impl RenderBackend for FltkPixels {
         let pixels = self.2.get_frame().chunks_exact_mut(4);
 
         for (pix, new) in pixels.zip(buf) {
-            println!("{pix:0>3?}");
-
-            if new != Colour::Transparent {
-                pix.copy_from_slice(&new.into_rgba());
-            }
+            pix.copy_from_slice(&new.into_rgba());
         }
 
         if self
             .2
             .render()
-            .map_err(|e| eprintln!("pixels.render() failed: {}", e))
+            .map_err(|e| eprintln!("pixels.render() failed: {:?}", e))
             .is_err()
         {
             self.1.quit();

@@ -139,18 +139,19 @@ impl<T: RenderBackend> Cpu<T> {
                     break 'a;
                 }
 
-                println!("{code:0>2x} @ {}", bytecode.1);
-
                 match code {
                     0x00 => {}
                     0x01 => {
                         let x: usize = bytecode.next().unwrap().into();
                         let y: usize = bytecode.next().unwrap().into();
-                        let clr = bytecode.next().unwrap();
-                        self.buf[x + y * WIDTH] = Colour::from_hex(clr);
+                        let clr = Colour::from_hex(bytecode.next().unwrap());
+
+                        if clr != Colour::Transparent {
+                            self.buf[x + y * WIDTH] = clr;
+                        };
 
                         if self.header.debug {
-                            println!("CPIX CALL :: ({x}, {y}) => {clr:x}");
+                            println!("CPIX CALL :: ({x}, {y}) => {clr:x?}");
                         }
                     }
                     0x02 => {
@@ -165,10 +166,15 @@ impl<T: RenderBackend> Cpu<T> {
                             self.memory[y_byte], bytecode.1
                         )) as usize;
                         let clr = bytecode.next().unwrap();
-                        self.buf[(x % WIDTH) + (y % HEIGHT) * WIDTH] = Colour::from_hex(clr);
+
+                        let clr = Colour::from_hex(clr);
+
+                        if clr != Colour::Transparent {
+                            self.buf[(x % WIDTH) + (y % HEIGHT) * WIDTH] = clr;
+                        }
 
                         if self.header.debug {
-                            println!("PIX CALL :: ({x} @ {x_byte:0>2x}, {y} @ {y_byte:0>2x}) => {clr:x}");
+                            println!("PIX CALL :: ({x} @ {x_byte:0>2x}, {y} @ {y_byte:0>2x}) => {clr:x?}");
                         }
                     }
                     0x03 => {
@@ -200,7 +206,13 @@ impl<T: RenderBackend> Cpu<T> {
                                 let x = x as usize + x_offset;
                                 let y = (y as usize + y_offset) * WIDTH;
 
-                                self.buf[x + y] = Colour::from_hex(*pix);
+                                let clr = Colour::from_hex(*pix);
+
+                                if clr == Colour::Transparent {
+                                    continue;
+                                }
+
+                                self.buf[x + y] = clr;
                             }
                         }
 
@@ -515,7 +527,7 @@ impl<T: RenderBackend> Cpu<T> {
                             bytecode.jmp(jmp_byte)
                         }
                         if self.header.debug {
-                            println!("TJMP CALL :: TO {jmp_byte} IF {var_addr} WHICH IS {:?}", self.memory[var_addr]);
+                            println!("TJMP CALL :: TO {jmp_byte} IF {var_addr:0>2x} WHICH IS {:0>2x?}", self.memory[var_addr]);
                         }
                     }
                     0xe2 => {
@@ -537,7 +549,7 @@ impl<T: RenderBackend> Cpu<T> {
                         }
 
                         if self.header.debug {
-                            println!("FJMP CALL :: TO {jmp_byte} IF NOT {var_addr} WHICH IS {:?}", self.memory[var_addr]);
+                            println!("FJMP CALL :: TO {jmp_byte} IF NOT {var_addr:0>2x} WHICH IS {:?}", self.memory[var_addr]);
                         }
                     }
                     0xe3 => {
@@ -555,7 +567,7 @@ impl<T: RenderBackend> Cpu<T> {
                         bytecode.jmp(jmp_byte);
 
                         if self.header.debug {
-                            println!("JMP CALL :: TO {jmp_byte} WHICH IS {:?}", bytecode.0.get(bytecode.1));
+                            println!("JMP CALL :: TO {jmp_byte} WHICH IS {:0>2x?}", bytecode.0.get(bytecode.1));
                         }
                     }
                     0xe4 => {
@@ -568,7 +580,7 @@ impl<T: RenderBackend> Cpu<T> {
                         bytecode.jmp(jmp_byte as usize);
 
                         if self.header.debug {
-                            println!("VJMP CALL :: TO {jmp_byte} @ {byte_addr:0>2x} WHICH IS {:?}", bytecode.0.get(bytecode.1));
+                            println!("VJMP CALL :: TO {jmp_byte} WHICH IS {:0>2x?} @ {byte_addr:0>2x} WHICH IS {:?}", bytecode.0.get(bytecode.1), self.memory[byte_addr]);
                         }
                     }
                     0xd0 => {
@@ -582,7 +594,7 @@ impl<T: RenderBackend> Cpu<T> {
                         };
 
                         if self.header.debug {
-                            println!("KEY CALL :: KC({keycode:0>2x?}) => {addr:0>2x} WHICH IS {:?}", self.memory[addr]);
+                            println!("KEY CALL :: {keycode:0>2x?} => {addr:0>2x} WHICH IS {:?}", self.memory[addr]);
                         }
                     }
                     0xfb => {
@@ -609,6 +621,10 @@ impl<T: RenderBackend> Cpu<T> {
                 // Must be used when using FLTK, otherwise
                 // the frame will not render.
                 self.window.fltk_up();
+
+                if self.header.debug {
+                    println!("INFO :: BYTE NO. {} (0x{:0>8x})", bytecode.1, bytecode.1);
+                }
             }
 
             if !self.header.repeat {
