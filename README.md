@@ -26,20 +26,29 @@ If an input asks for multiple bytes, assume that it is in Little Endian order.
 
 The format goes as follows:
 
-`Instruction Parameters`.
+`InstructionByte Parameters`.
 
 If I wanted to write a pixel to a specific spot on the screen, the hex for that would be `f1 00 00 00`. The three parameters correspond to X location, Y location, and colour code (Despite the input byte being up to 255, only 16 codes are supported. Check the [colour reference](colour_code.md) for more info).
 
 ### Instruction set
 
-The instructions are focused more on ergonomics over being easier to implement an interpreter for.
+The instruction set concedes space for ergonomics when working in a hex editor. The minimum size for all inputs is at least 8 bits.
+
+- Length of an instruction: 8 bits / 1 byte
+- Length of an address: 8 bits / 1 byte
+- Length of a colour code: 8 bits / 1 byte
+- Length of a key code: 8 bits / 1 byte
+- Length of a type: 8 bites / 1 byte
+- Length of a screen position (X/Y): 8 bits / 1 byte
+- Length of a jump position: 64 bits / 8 bytes
+- Size of a variable: 64 bits / 8 bytes
 
 | Name | Code | Parameters |
 | --------------------------- | ------ | ----------------------- |
 | No Op | `0x00` | |
 | Write pixel | `0x01` | X pos, Inverted Y pos, [Colour](colour_code.md) |
 | Write pixel using mem | `0x02` | X pos addr, Inverted Y pos addr, [Colour](colour_code.md) |
-| Draw Sprite | `0x03` | **Eight** Byte Array Addresses ([Colour](colour_code.md) codes), X pos addr, Y pos addr |
+| Draw Sprite | `0x03` | Eight **addresses** to arrays containing [colour](colour_code.md) codes, X pos addr, Y pos addr |
 | Clear screen | `0xfc` | Input [colour](colour_code.md) code |
 | Flush buffer (Render frame) | `0xfb` | |
 | Float Div | `0xf0` | LHS Addr, RHS Addr, Addr Num|
